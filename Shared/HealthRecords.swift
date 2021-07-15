@@ -93,4 +93,21 @@ class HealthRecords {
         }
         return result
     }
+    
+//    func apiCall(completion: @escaping ([String]) -> Void) {
+//        var results: [String]
+//        let url = URL(string: "http://rxnav.nlm.nih.gov/REST/rxclass")
+//        let task = URLSession.shared.dataTask(with: url!, completionHandler: { (data, response, error) in
+//            if let error = error {
+//                print("Error accessing rxclass: \(error)")
+//            }
+//            guard let httpResponse = response as? HTTPURLResponse,
+//                  (200...299).contains(httpResponse.statusCode) else {
+//                print("Error with the response, unexpected status code: \(response!)")
+//                return
+//            }
+//        })
+//        task.resume()
+//        completion(results)
+//    }
 }

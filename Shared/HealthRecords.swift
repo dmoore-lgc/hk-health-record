@@ -39,7 +39,7 @@ class HealthRecords {
                 let ms = medicationSamples!
                 var fhirResources = [HKFHIRResource]()
                 for index in 0 ..< ms.count {
-                    
+                    print(ms[index].displayName)
                     fhirResources.append(ms[index].fhirResource!)
                 }
                 // For testing purposes the request authorization function drives the deserialization functions and prints them to console.
@@ -93,21 +93,4 @@ class HealthRecords {
         }
         return result
     }
-    
-//    func apiCall(completion: @escaping ([String]) -> Void) {
-//        var results: [String]
-//        let url = URL(string: "http://rxnav.nlm.nih.gov/REST/rxclass")
-//        let task = URLSession.shared.dataTask(with: url!, completionHandler: { (data, response, error) in
-//            if let error = error {
-//                print("Error accessing rxclass: \(error)")
-//            }
-//            guard let httpResponse = response as? HTTPURLResponse,
-//                  (200...299).contains(httpResponse.statusCode) else {
-//                print("Error with the response, unexpected status code: \(response!)")
-//                return
-//            }
-//        })
-//        task.resume()
-//        completion(results)
-//    }
 }

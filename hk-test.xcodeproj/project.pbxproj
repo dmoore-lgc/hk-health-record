@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -111,7 +111,6 @@
 				4D7F925DB1475BD91F2C563E /* Pods-hk-test (macOS).debug.xcconfig */,
 				23B3847699D9B22A1A4365C6 /* Pods-hk-test (macOS).release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};

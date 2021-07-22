@@ -11,65 +11,56 @@ import Alamofire
 import SWXMLHash
 
 struct ContentView: View {
-    var body: some View {
-        Button {
-            fetchMedicationsForDisease(disease: "rhinitis", completionHandler: { results in
-                print(results!)
-            })
-            if let healthStore = healthStore {
-                healthStore.requestAuthorization { success in
-                    print(success)
-                }
-            }
-        } label: {
-            Text("Test HealthKit")
-                .fontWeight(.bold)
-                .font(.title)
-                .padding()
-                .background(Color.blue)
-                .cornerRadius(40)
-                .foregroundColor(.white)
-                .padding(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 40)
-                        .stroke(Color.blue, lineWidth: 5)
-                )
-        }
-
-    }
+    @State private var name: String = ""
+    @State var medications = [String]()
+    @State var dMeds = [String]()
+    @State var uMeds = [String]()
     private var healthStore: HealthRecords?
     
     init() {
         healthStore = HealthRecords()
+        healthStore!.requestAuthorization { success in
+        }
     }
     
-    func fetchMedicationsForDisease(disease: String, completionHandler: @escaping ([String]?) -> Void) {
-        let url1 = "https://rxnav.nlm.nih.gov/REST/rxclass/class/byName.xml?className=\(disease)&classTypes=DISEASE"
-        AF.request(url1).responseData { response in
-            switch response.result {
-            case .success(let value):
-                // API returns XML format which can be parsed with SWXMLHash pod.
-                let xml = SWXMLHash.parse(value)
-                let diseaseCode = xml["rxclassdata"]["rxclassMinConceptList"]["rxclassMinConcept"]["classId"].element!.text
-                let url2 = "https://rxnav.nlm.nih.gov/REST/rxclass/classMembers.xml?classId=\(diseaseCode)&relaSource=MEDRT&rela=may_treat&direct=0&ttys=IN"
-                AF.request(url2).responseData { response in
-                    switch response.result {
-                    case .success(let value):
-                        var output = [String]()
-                        let xml = SWXMLHash.parse(value)
-                        for elem in xml["rxclassdata"]["drugMemberGroup"]["drugMember"].all {
-                            //print("\(elem["minConcept"]["name"].element!.text): \(elem["minConcept"]["rxcui"].element!.text)")
-                            output.append(elem["minConcept"]["rxcui"].element!.text)
-                        }
-                        completionHandler(output)
-                    case .failure(let error):
-                        print(error)
-                        completionHandler(nil)
+    var body: some View {
+        NavigationView {
+            Form {
+                // Asthma
+                // Rhinitis
+                // Goiter
+                Section(header: Text("USER INPUT")) {
+                    TextField("Disease/Condition e.g. Rhinitis", text: $name)
+                }
+                Section {
+                    Button {
+                        print(String(name.unicodeScalars.filter(CharacterSet.alphanumerics.contains)))
+                        healthStore?.fetchMedicationsForDisease(disease: String(name.unicodeScalars.filter(CharacterSet.alphanumerics.contains)), completionHandler: { results in
+                            print("Disease medication RXCUIs are: \(results!)")
+                            dMeds = results!
+                        })
+                    } label: {
+                        Text("Enter Disease")
+                    }
+                    Button {
+                        healthStore!.compareArrays(uMeds: uMeds, dMeds: dMeds, disease: name)
+                    } label: {
+                        Text("Evaluate Medications")
                     }
                 }
-            case .failure(let error):
-                print(error)
-                completionHandler(nil)
+            }
+            .navigationTitle(Text("Health Record"))
+        }.onAppear {
+            healthStore?.getUserMeds { results in
+                uMeds = results
+            }
+        }
+    }
+    
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            Group {
+                ContentView()
             }
         }
     }

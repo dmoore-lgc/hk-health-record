@@ -23,7 +23,9 @@ class HealthRecords {
         
         let medications = HKObjectType.clinicalType(forIdentifier: .medicationRecord)!
         let conditions = HKObjectType.clinicalType(forIdentifier: .conditionRecord)!
-        let types = Set([medications, conditions])
+        let procedures = HKObjectType.clinicalType(forIdentifier: .procedureRecord)!
+        let allergies = HKObjectType.clinicalType(forIdentifier: .allergyRecord)!
+        let types = Set([medications, conditions, procedures, allergies])
         
         guard let healthStore = self.healthStore else { return completion(false)}
         
@@ -35,72 +37,65 @@ class HealthRecords {
         }
     }
     
-    func getUserMeds(completion: @escaping ([String]) -> Void) {
-        let medicationType = HKObjectType.clinicalType(forIdentifier: .medicationRecord)!
-        let query = HKSampleQuery(sampleType: medicationType,
+    func getUserSamples(identifier: HKClinicalTypeIdentifier,completion: @escaping ([String]) -> Void) {
+        let type = HKObjectType.clinicalType(forIdentifier: identifier)!
+        let query = HKSampleQuery(sampleType: type,
                                   predicate: nil,
                                   limit: HKObjectQueryNoLimit,
                                   sortDescriptors: []) { (query, samples, error) in
-            let medicationSamples = samples as? [HKClinicalRecord]
-            let ms = medicationSamples!
+            let samplesArr = samples as? [HKClinicalRecord]
+            let arr = samplesArr!
             var fhirResources = [HKFHIRResource]()
-            for index in 0 ..< ms.count {
-                //print(ms[index].displayName)
-                print(ms[index].displayName)
-                fhirResources.append(ms[index].fhirResource!)
+            for index in 0 ..< arr.count {
+                print(arr[index].displayName)
+                fhirResources.append(arr[index].fhirResource!)
             }
-            // For testing purposes the request authorization function drives the deserialization functions and prints them to console.
-            var hkMeds = [String]()
-            //print(self.deserializeJSON(input: fhirResources))
-            for elem in self.deserializeJSON(input: fhirResources) {
-                self.convertSCDCtoIN(rxcui: elem!) { ingredient in
-                    hkMeds.append(ingredient!)
+            var output = [String]()
+            for elem in self.deserializeJSON(input: fhirResources, identifier: identifier) {
+                if identifier == .medicationRecord {
+                    self.convertSCDCtoIN(rxcui: elem!) { ingredient in
+                        sleep(1)
+                        output.append(ingredient!)
+                    }
+                } else {
+                    output.append(elem!)
                 }
             }
-            //  When sleep isn't called the following error is returned - "nw_protocol_get_quic_image_block_invoke dlopen libquic failed"
-            sleep(2)
-            print("User medication RXCUIs are: \(hkMeds)")
-            completion(hkMeds)
+            //sleep(2)
+            print(output)
+            completion(output)
         }
         healthStore!.execute(query)
     }
     
-    // Initially implemented a solution which returns an array of tuples consisting of the provider (RxNorm) and the RXCUI code.
-    // As far as I am aware the only provider used for medications is RxNorm so it is only the RXCUI code which is needed.
-    func deserializeJSONToTuples(input: [HKFHIRResource]) -> [(Any?, Any?)] {
-        var tuples = [(Any?, Any?)]()
-        for index in 0 ..< input.count {
-            do {
-                let jsonObject = try JSONSerialization.jsonObject(with: input[index].data, options: JSONSerialization.ReadingOptions.mutableContainers)
-                if let jsonDict = jsonObject as? NSDictionary {
-                    //print (jsonDict)
-                    if let jsonDict = jsonDict["medicationCodeableConcept"]! as? NSDictionary {
-                        let jsonArray = jsonDict["coding"]! as? NSArray
-                        let jsonDict = jsonArray![0] as? NSDictionary
-                        tuples.append((jsonDict!["system"], jsonDict!["code"]))
-                    }
-                }
-            } catch {
-                print(error)
-            }
-        }
-        return tuples
-    }
-    
-    // This is the adjusted function which returns a list of RXCUI codes instead. These codes will then need to be checked against an array of RXCUI
-    // codes relating to the disease/condition relevant to the questionnaire question.
-    func deserializeJSON(input: [HKFHIRResource]) -> [String?] {
+    func deserializeJSON(input: [HKFHIRResource], identifier: HKClinicalTypeIdentifier) -> [String?] {
         var results = [String?]()
+        var flag = false
+        var inp = ""
+        switch identifier {
+        case .allergyRecord:
+            inp = "substance"
+        case .medicationRecord:
+            inp = "medicationCodeableConcept"
+        case .procedureRecord:
+            flag = true
+        default:
+            flag = true
+        }
         for index in 0 ..< input.count {
             do {
                 let jsonObject = try JSONSerialization.jsonObject(with: input[index].data, options: JSONSerialization.ReadingOptions.mutableContainers)
                 if let jsonDict = jsonObject as? NSDictionary {
-                    //print (jsonDict)
-                    if let jsonDict = jsonDict["medicationCodeableConcept"]! as? NSDictionary {
-                        let jsonArray = jsonDict["coding"]! as? NSArray
-                        let jsonDict = jsonArray![0] as? NSDictionary
-                        if jsonDict!["code"] != nil {
-                            results.append(String(describing: jsonDict!["code"]!))
+                    if flag {
+                        let result = ((jsonDict["code"] as? NSDictionary)!["coding"] as? NSArray)![0] as? NSDictionary
+                        if result!["code"] != nil {
+                            results.append(String(describing: result!["code"]!))
+                        }
+                    }
+                    else if let jsonDict = jsonDict["\(inp)"] as? NSDictionary {
+                        let result = (jsonDict["coding"]! as? NSArray)![0] as? NSDictionary
+                        if result!["code"] != nil {
+                            results.append(String(describing: result!["code"]!))
                         }
                     }
                 }
@@ -168,15 +163,14 @@ class HealthRecords {
         }
     }
     
-    func compareArrays(uMeds: [String], dMeds: [String], disease: String) {
+    func compareArrays(uMeds: [String], dMeds: [String], disease: String) -> String {
         for uMed in uMeds {
             for dMed in dMeds {
                 if uMed == dMed {
-                    print("\(uMed) treats \(disease).\n")
-                    return
+                    return ("\(uMed) treats \(disease).")
                 }
             }
         }
-        print("No matches found.")
+        return ("No matches found.")
     }
 }

@@ -114,13 +114,6 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		A46FE6B7268DD5B5009FCC30 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
 		A4B9F9F7268C7A8800B9AA3F = {
 			isa = PBXGroup;
 			children = (
@@ -139,7 +132,6 @@
 		A4B9F9FC268C7A8800B9AA3F /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				A46FE6B7268DD5B5009FCC30 /* Models */,
 				A4B9F9FE268C7A8800B9AA3F /* ContentView.swift */,
 				A4B9F9FF268C7A8B00B9AA3F /* Assets.xcassets */,
 				A4B9FA3A268C7ED900B9AA3F /* HealthStore.swift */,

@@ -15,6 +15,8 @@ struct ContentView: View {
     @State var medications = [String]()
     @State var dMeds = [String]()
     @State var uMeds = [String]()
+    @State private var showingMatchAlert = false
+    @State var message = ""
     private var healthStore: HealthRecords?
     
     init() {
@@ -43,15 +45,25 @@ struct ContentView: View {
                         Text("Enter Disease")
                     }
                     Button {
-                        healthStore!.compareArrays(uMeds: uMeds, dMeds: dMeds, disease: name)
+                        message = healthStore!.compareArrays(uMeds: uMeds, dMeds: dMeds, disease: name)
+                        showingMatchAlert = true
                     } label: {
                         Text("Evaluate Medications")
                     }
                 }
             }
             .navigationTitle(Text("Health Record"))
+            .alert(isPresented: $showingMatchAlert) {
+                Alert(title: Text("Health Record Evaluated"), message: Text(message), dismissButton: .default(Text("OK")))
+            }
         }.onAppear {
-            healthStore?.getUserMeds { results in
+            healthStore!.requestAuthorization { success in
+            }
+            healthStore?.getUserSamples(identifier: .allergyRecord) { results in
+            }
+            healthStore?.getUserSamples(identifier: .procedureRecord) { results in
+            }
+            healthStore?.getUserSamples(identifier: .medicationRecord) { results in
                 uMeds = results
             }
         }
@@ -64,4 +76,21 @@ struct ContentView: View {
             }
         }
     }
+    
+    func buttonClicked() {
+         print("Button Clicked")
+    }
+}
+class Controller: UIViewController {
+    @IBAction func showAlertButtonTapped(_ sender: UIButton) {
+
+            // create the alert
+            let alert = UIAlertController(title: "My Title", message: "This is my message.", preferredStyle: UIAlertController.Style.alert)
+
+            // add an action (button)
+            alert.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
+
+            // show the alert
+            self.present(alert, animated: true, completion: nil)
+        }
 }
